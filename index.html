@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>지존짱짱 V8 - 소셜 코딩 플랫폼</title>
+    <title>지존짱짱 V9 - 소셜 코딩 플랫폼</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://unpkg.com/blockly/blockly.min.js"></script>
@@ -20,10 +20,10 @@
 <nav id="navbar" class="h-16 bg-white border-b px-8 flex justify-between items-center z-50">
     <h1 onclick="showMain()" class="text-2xl font-black text-blue-600 cursor-pointer italic">ZIZON ZZANG</h1>
     <div id="navMenu" class="flex items-center space-x-6 font-bold text-slate-600">
-        <button onclick="showMain()">메인</button>
-        <button onclick="openEditor()">만들기</button>
-        <div class="bg-slate-100 px-4 py-2 rounded-full text-sm">
-            <span id="userNameDisplay">로그인 필요</span>
+        <button onclick="showMain()">🏠 메인</button>
+        <button onclick="openEditor()">➕ 만들기</button>
+        <div class="bg-blue-50 px-4 py-2 rounded-full text-sm text-blue-600">
+            👤 <span id="userNameDisplay">어쩌다코딩</span>
         </div>
     </div>
 </nav>
@@ -40,31 +40,34 @@
         <div class="lg:col-span-2 flex flex-col items-center">
             <div id="playStage" class="play-stage mb-4"></div>
             <div class="flex space-x-3 w-full justify-center">
-                <button onclick="runProject()" class="bg-green-500 text-white px-10 py-3 rounded-2xl font-black shadow-lg">▶ 시작하기</button>
-                <button onclick="stopProject()" class="bg-red-500 text-white px-10 py-3 rounded-2xl font-black shadow-lg">■ 정지하기</button>
+                <button onclick="runProject()" class="bg-green-500 hover:bg-green-600 text-white px-10 py-3 rounded-2xl font-black shadow-lg transition">▶ 시작하기</button>
+                <button onclick="stopProject()" class="bg-red-500 hover:bg-red-600 text-white px-10 py-3 rounded-2xl font-black shadow-lg transition">■ 정지하기</button>
             </div>
         </div>
-        <div class="bg-white p-8 rounded-[30px] shadow-sm border border-slate-200">
-            <h2 id="viewTitle" class="text-3xl font-black mb-4 text-slate-800">작품 제목</h2>
-            <div onclick="goToUserPage()" class="flex items-center space-x-3 mb-6 p-3 bg-blue-50 rounded-2xl cursor-pointer hover:bg-blue-100 transition">
-                <span class="text-2xl">👤</span>
+        <div class="bg-white p-8 rounded-[30px] shadow-sm border border-slate-200 flex flex-col">
+            <h2 id="viewTitle" class="text-3xl font-black mb-2 text-slate-800">작품 제목</h2>
+            
+            <div onclick="goToUserPage()" class="flex items-center space-x-3 mb-6 p-4 bg-blue-50 rounded-2xl cursor-pointer hover:bg-blue-100 transition border border-blue-100">
+                <span class="text-3xl">👤</span>
                 <div>
-                    <div class="text-xs text-blue-500 font-bold">제작자</div>
-                    <div id="viewAuthor" class="font-black text-slate-700">작성자 닉네임</div>
+                    <div class="text-xs text-blue-500 font-bold uppercase">Creator</div>
+                    <div id="viewAuthor" class="font-black text-slate-700 text-lg">작성자 닉네임</div>
                 </div>
             </div>
-            <div class="flex justify-around mb-8 border-y py-4">
+
+            <div class="flex justify-around mb-8 border-y py-6">
                 <div class="text-center">
-                    <div class="text-slate-400 text-xs font-bold">조회수</div>
-                    <div id="viewCount" class="text-xl font-black">0</div>
+                    <div class="text-slate-400 text-xs font-bold mb-1">조회수</div>
+                    <div id="viewCount" class="text-2xl font-black text-slate-700">0</div>
                 </div>
                 <div class="text-center">
-                    <div class="text-slate-400 text-xs font-bold">좋아요</div>
-                    <div id="likeCount" class="text-xl font-black">0</div>
+                    <div class="text-slate-400 text-xs font-bold mb-1">좋아요</div>
+                    <div id="likeCount" class="text-2xl font-black text-pink-500">0</div>
                 </div>
             </div>
+
             <button onclick="handleLike()" class="w-full bg-pink-50 text-pink-500 py-4 rounded-2xl font-black mb-4 hover:bg-pink-100 transition text-xl">❤️ 좋아요 꾹!</button>
-            <button id="editBtn" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-black hidden">🛠️ 코드 보기/수정</button>
+            <button id="editBtn" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-black hidden hover:bg-slate-700 transition">🛠️ 코드 보기/수정</button>
         </div>
     </div>
 </div>
@@ -76,10 +79,10 @@
     <div class="w-80 bg-white border-l p-6 flex flex-col shadow-xl">
         <input id="editTitle" class="text-2xl font-black border-b-2 mb-6 outline-none focus:border-blue-500" value="새 작품">
         <div class="flex-grow">
-            <h3 class="font-bold text-slate-400 mb-4 uppercase text-xs tracking-widest">오브젝트</h3>
+            <h3 class="font-bold text-slate-400 mb-4 uppercase text-xs">오브젝트 설정</h3>
             <div id="objectList" class="grid grid-cols-3 gap-2"></div>
         </div>
-        <button onclick="saveProject()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg">공개하기</button>
+        <button onclick="saveProject()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg">🚀 작품 공개하기</button>
     </div>
 </div>
 
@@ -88,23 +91,26 @@
 </xml>
 
 <script>
-// --- 파이어베이스 설정 (본인 키로 교체 필요) ---
-const firebaseConfig = { 
-    apiKey: "YOUR_KEY", 
-    databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-    projectId: "YOUR_PROJECT" 
+// --- 파이어베이스 설정 (네 설정값 넣는 곳) ---
+const firebaseConfig = {
+    apiKey: "AIzaSyDdFsRGy_2mZowYinOf9LeQhot08xyaqc4",
+    authDomain: "zizon-coding.firebaseapp.com",
+    projectId: "zizon-coding",
+    storageBucket: "zizon-coding.firebasestorage.app",
+    messagingSenderId: "146850583672",
+    appId: "1:146850583672:web:243e71867880c00ffdc98d",
+    measurementId: "G-1J0CJ55MNS",
+    databaseURL: "https://zizon-coding-default-rtdb.firebaseio.com"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// --- 전역 변수 ---
-let currentUser = { id: "test_id", nickname: "지존코더" }; // 임시 유저
+let currentUser = { id: "user_minwoo", nickname: "어쩌다코딩" }; 
 let currentProject = null;
 let objects = [];
-let initialPos = []; // 정지 시 되돌아갈 위치 저장용
+let initialPos = []; // [핵심] 리셋용 초기 위치 저장
 let workspace;
 
-// --- 화면 전환 로직 ---
 function hideAll() {
     ['mainScreen', 'projectPage', 'editorScreen'].forEach(id => document.getElementById(id).classList.add('hidden'));
 }
@@ -132,18 +138,89 @@ function showMain() {
     });
 }
 
-// --- [작품 페이지] 엔트리처럼 구현 ---
+// [핵심] 작품 페이지 진입 (조회수 증가 및 리셋 포인트 설정)
 function openProjectPage(p) {
     hideAll(); document.getElementById('projectPage').classList.remove('hidden');
     currentProject = p;
-    objects = JSON.parse(JSON.stringify(p.objects)); // 복사본 생성
+    
+    // 작품 데이터 로드
+    objects = JSON.parse(JSON.stringify(p.objects));
+    initialPos = JSON.parse(JSON.stringify(p.objects)); // [중요] 시작 전 위치 박제
     
     document.getElementById('viewTitle').innerText = p.name;
     document.getElementById('viewAuthor').innerText = p.authorName;
     document.getElementById('viewCount').innerText = (p.views || 0) + 1;
-    document.getElementById('viewLikes').innerText = p.likes || 0;
+    document.getElementById('likeCount').innerText = p.likes || 0;
     
-    // 조회수 증가
+    // 서버에 조회수 +1
     db.ref('projects/' + p.id + '/views').set((p.views || 0) + 1);
     
-    // 수정
+    const eb = document.getElementById('editBtn');
+    if(p.authorId === currentUser.id) {
+        eb.classList.remove('hidden');
+        eb.onclick = () => openEditor(p);
+    } else eb.classList.add('hidden');
+
+    renderStage();
+}
+
+function renderStage() {
+    const stage = document.getElementById('playStage');
+    stage.innerHTML = '';
+    objects.forEach((obj, i) => {
+        const el = document.createElement('div');
+        el.className = "sprite text-6xl";
+        el.style.left = (320 + obj.x) + "px";
+        el.style.top = (180 - obj.y) + "px";
+        el.innerText = obj.emoji;
+        stage.appendChild(el);
+    });
+}
+
+// [핵심] 정지하면 시작 위치로 복구
+function runProject() {
+    // 실제로는 Blockly 코드가 실행되어야 함
+    objects[0].x += 50; 
+    renderStage();
+}
+
+function stopProject() {
+    // 딥카피를 이용해 초기 위치로 완벽하게 덮어쓰기
+    objects = JSON.parse(JSON.stringify(initialPos));
+    renderStage();
+}
+
+function handleLike() {
+    const newLikes = (currentProject.likes || 0) + 1;
+    db.ref('projects/' + currentProject.id + '/likes').set(newLikes);
+    document.getElementById('likeCount').innerText = newLikes;
+}
+
+function goToUserPage() {
+    alert(currentProject.authorName + "님의 마이페이지로 이동합니다! (여기에 해당 유저가 만든 작품 목록을 띄우면 됨)");
+}
+
+function openEditor(p = null) {
+    hideAll(); document.getElementById('editorScreen').classList.remove('hidden');
+    if(!workspace) workspace = Blockly.inject('blocklyDiv', { toolbox: document.getElementById('toolbox') });
+    if(p) {
+        document.getElementById('editTitle').value = p.name;
+        objects = p.objects;
+    } else {
+        objects = [{ emoji: '🤖', x: -100, y: 0 }];
+    }
+}
+
+function saveProject() {
+    const name = document.getElementById('editTitle').value;
+    db.ref('projects').push({
+        name, objects, authorId: currentUser.id, authorName: currentUser.nickname,
+        views: 0, likes: 0
+    });
+    showMain();
+}
+
+window.onload = showMain;
+</script>
+</body>
+</html>
