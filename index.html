@@ -2,337 +2,148 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>지존짱짱 코딩 V7 - 소셜 플랫폼</title>
+    <title>지존짱짱 V8 - 소셜 코딩 플랫폼</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
-    
     <script src="https://unpkg.com/blockly/blockly.min.js"></script>
     <script src="https://unpkg.com/blockly/javascript_compressed.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { margin:0; background:#f8fafc; overflow:hidden; height:100vh; font-family: 'Pretendard', sans-serif;}
-        .hidden {display:none!important;}
-        .stage-bg { background: linear-gradient(#e2e8f0 1px, transparent 1px) center, linear-gradient(90deg, #e2e8f0 1px, transparent 1px) center; background-size: 100% 2px, 2px 100%; background-repeat: no-repeat; }
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        body { margin:0; background:#f0f2f5; height:100vh; font-family: 'Pretendard', sans-serif; overflow: hidden; }
+        .hidden { display:none !important; }
+        .play-stage { width: 640px; height: 360px; background: white; border: 4px solid #334155; position: relative; overflow: hidden; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        .sprite { position: absolute; transition: all 0.2s linear; transform: translate(-50%, -50%); cursor: pointer; user-select: none; }
     </style>
 </head>
 <body class="flex flex-col">
 
-<div id="authScreen" class="fixed inset-0 flex items-center justify-center bg-slate-100 z-[100]">
-    <div class="bg-white p-10 rounded-[40px] w-[450px] shadow-2xl text-center">
-        <h2 class="text-4xl font-black mb-8 text-blue-600">지존짱짱 V7 🚀</h2>
-        <div id="loginForm" class="space-y-4">
-            <input id="loginId" placeholder="아이디" class="w-full p-4 border-2 rounded-2xl outline-blue-500">
-            <input id="loginPw" type="password" placeholder="비밀번호" class="w-full p-4 border-2 rounded-2xl outline-blue-500">
-            <button onclick="handleLogin()" class="w-full bg-blue-600 text-white p-4 rounded-2xl font-bold text-xl hover:bg-blue-700">접속하기</button>
-            <p class="text-gray-400">계정이 없나요? <button onclick="toggleAuth(true)" class="text-blue-500 underline">회원가입</button></p>
-        </div>
-        <div id="joinForm" class="hidden space-y-4">
-            <input id="joinId" placeholder="아이디" class="w-full p-4 border-2 rounded-2xl">
-            <input id="joinPw" type="password" placeholder="비밀번호" class="w-full p-4 border-2 rounded-2xl">
-            <input id="joinNick" placeholder="닉네임" class="w-full p-4 border-2 rounded-2xl">
-            <button onclick="handleJoin()" class="w-full bg-green-600 text-white p-4 rounded-2xl font-bold text-xl">가입 완료</button>
-            <button onclick="toggleAuth(false)" class="text-gray-400 underline">로그인으로 돌아가기</button>
-        </div>
-    </div>
-</div>
-
-<nav id="topNavbar" class="hidden h-16 bg-white flex justify-between px-8 items-center border-b z-40 shadow-sm">
-    <h1 onclick="showMain()" class="font-black text-2xl text-blue-600 cursor-pointer">지존짱짱</h1>
-    <div class="flex items-center space-x-6 font-bold text-slate-600">
-        <button onclick="showMain()">🏠 홈</button>
-        <button onclick="showUserPage(currentUser.id, currentUser.nickname)">📦 마이페이지</button>
+<nav id="navbar" class="h-16 bg-white border-b px-8 flex justify-between items-center z-50">
+    <h1 onclick="showMain()" class="text-2xl font-black text-blue-600 cursor-pointer italic">ZIZON ZZANG</h1>
+    <div id="navMenu" class="flex items-center space-x-6 font-bold text-slate-600">
+        <button onclick="showMain()">메인</button>
+        <button onclick="openEditor()">만들기</button>
         <div class="bg-slate-100 px-4 py-2 rounded-full text-sm">
-            <span id="navNickname"></span>
-            <button onclick="handleLogout()" class="text-red-500 ml-2">로그아웃</button>
+            <span id="userNameDisplay">로그인 필요</span>
         </div>
     </div>
 </nav>
 
-<div id="mainScreen" class="hidden p-10 overflow-y-auto h-full bg-slate-50">
-    <div class="max-w-7xl mx-auto">
-        <div class="flex justify-between items-end mb-10">
-            <div>
-                <h2 class="text-4xl font-black text-slate-800 mb-2">모두의 아이디어 💡</h2>
-                <p class="text-slate-400">실시간으로 업데이트되는 친구들의 작품을 구경하세요.</p>
-            </div>
-            <button onclick="openEditor()" class="bg-blue-600 text-white px-8 py-4 rounded-3xl font-black shadow-lg hover:scale-105 transition">+ 새 작품 만들기</button>
-        </div>
-        <div id="publicProjectList" class="grid grid-cols-1 md:grid-cols-4 gap-8"></div>
+<div id="mainScreen" class="flex-grow overflow-y-auto p-10 hidden">
+    <div class="max-w-6xl mx-auto">
+        <h2 class="text-3xl font-black mb-8 text-slate-800">공개된 작품들 ✨</h2>
+        <div id="projectGrid" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
     </div>
 </div>
 
-<div id="userPageScreen" class="hidden p-10 overflow-y-auto h-full bg-white">
-    <div class="max-w-7xl mx-auto text-center">
-        <div class="mb-12">
-            <div class="text-6xl mb-4">👤</div>
-            <h2 id="userPageName" class="text-4xl font-black text-slate-800 mb-2">사용자님의 보관함</h2>
-            <div id="userPageStats" class="text-slate-400 font-bold italic">작품 0개 · 총 조회수 0회</div>
-        </div>
-        <div id="userProjectList" class="grid grid-cols-1 md:grid-cols-4 gap-8 text-left border-t pt-10"></div>
-    </div>
-</div>
-
-<div id="playScreen" class="hidden fixed inset-0 bg-slate-900 z-50 flex flex-col items-center justify-center">
-    <div class="flex w-full max-w-6xl justify-between items-end mb-6 px-6">
-        <div class="text-white">
-            <h2 id="playTitle" class="text-4xl font-black mb-2">작품 제목</h2>
-            <div class="flex items-center space-x-4 text-sm font-bold">
-                <button id="authorLink" class="bg-slate-700 px-3 py-1 rounded-lg hover:bg-blue-500">👤 작성자: <span id="playAuthor"></span></button>
-                <span class="text-slate-400">👀 조회수 <span id="playViews">0</span></span>
-                <button onclick="handleLike()" class="text-pink-400 bg-white/10 px-3 py-1 rounded-lg">❤️ 좋아요 <span id="playLikes">0</span></button>
+<div id="projectPage" class="flex-grow flex flex-col items-center justify-center p-6 hidden bg-slate-50 overflow-y-auto">
+    <div class="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2 flex flex-col items-center">
+            <div id="playStage" class="play-stage mb-4"></div>
+            <div class="flex space-x-3 w-full justify-center">
+                <button onclick="runProject()" class="bg-green-500 text-white px-10 py-3 rounded-2xl font-black shadow-lg">▶ 시작하기</button>
+                <button onclick="stopProject()" class="bg-red-500 text-white px-10 py-3 rounded-2xl font-black shadow-lg">■ 정지하기</button>
             </div>
         </div>
-        <div class="space-x-3">
-            <button onclick="runCode()" class="bg-green-500 text-white px-8 py-3 rounded-2xl font-black">▶ 실행</button>
-            <button onclick="stopCode()" class="bg-red-500 text-white px-8 py-3 rounded-2xl font-black">■ 정지</button>
-            <button id="editBtn" class="bg-blue-600 text-white px-8 py-3 rounded-2xl font-black hidden">🛠️ 수정하기</button>
-            <button onclick="showMain()" class="bg-slate-700 text-white px-6 py-3 rounded-2xl font-black">나가기</button>
-        </div>
-    </div>
-    <div class="flex w-full max-w-6xl space-x-6 h-[500px]">
-        <div id="playStage" class="w-2/3 bg-white border-8 border-slate-700 rounded-[40px] relative overflow-hidden stage-bg shadow-2xl"></div>
-        <div id="playConsole" class="w-1/3 bg-black text-green-400 p-8 rounded-[40px] font-mono text-sm overflow-y-auto border-4 border-slate-800 shadow-2xl">
-            > 작품 로딩 완료...
-        </div>
-    </div>
-</div>
-
-<div id="workspaceScreen" class="hidden flex flex-col h-screen bg-white">
-    <header class="bg-slate-900 text-white p-4 flex justify-between items-center shadow-lg">
-        <input id="pName" class="bg-transparent border-b border-slate-600 text-xl font-black outline-none px-2 focus:border-blue-400" value="새 작품">
-        <div class="space-x-2">
-            <button onclick="saveProject()" class="bg-blue-600 px-6 py-2 rounded-xl font-black">💾 저장하기</button>
-            <button onclick="showMain()" class="bg-slate-700 px-6 py-2 rounded-xl font-black">나가기</button>
-        </div>
-    </header>
-    <div class="flex flex-grow overflow-hidden">
-        <div id="blocklyArea" class="w-3/4"><div id="blocklyDiv" style="position:absolute; width:100%; height:100%;"></div></div>
-        <div class="w-1/4 bg-slate-50 border-l p-6 overflow-y-auto">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="font-black text-slate-800">오브젝트 리스트</h3>
-                <button onclick="addObject('🤖')" class="text-xs bg-indigo-500 text-white px-3 py-1 rounded-lg">+ 추가</button>
-            </div>
-            <div id="spriteList" class="grid grid-cols-4 gap-2 mb-6"></div>
-            <div id="objEditor" class="bg-white p-4 rounded-3xl shadow-sm border space-y-4">
-                <div class="grid grid-cols-2 gap-2 text-xs font-bold">
-                    <div>X <input id="inpX" type="number" class="w-full border p-2 rounded-xl mt-1" onchange="updateObjProps()"></div>
-                    <div>Y <input id="inpY" type="number" class="w-full border p-2 rounded-xl mt-1" onchange="updateObjProps()"></div>
+        <div class="bg-white p-8 rounded-[30px] shadow-sm border border-slate-200">
+            <h2 id="viewTitle" class="text-3xl font-black mb-4 text-slate-800">작품 제목</h2>
+            <div onclick="goToUserPage()" class="flex items-center space-x-3 mb-6 p-3 bg-blue-50 rounded-2xl cursor-pointer hover:bg-blue-100 transition">
+                <span class="text-2xl">👤</span>
+                <div>
+                    <div class="text-xs text-blue-500 font-bold">제작자</div>
+                    <div id="viewAuthor" class="font-black text-slate-700">작성자 닉네임</div>
                 </div>
             </div>
+            <div class="flex justify-around mb-8 border-y py-4">
+                <div class="text-center">
+                    <div class="text-slate-400 text-xs font-bold">조회수</div>
+                    <div id="viewCount" class="text-xl font-black">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-slate-400 text-xs font-bold">좋아요</div>
+                    <div id="likeCount" class="text-xl font-black">0</div>
+                </div>
+            </div>
+            <button onclick="handleLike()" class="w-full bg-pink-50 text-pink-500 py-4 rounded-2xl font-black mb-4 hover:bg-pink-100 transition text-xl">❤️ 좋아요 꾹!</button>
+            <button id="editBtn" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-black hidden">🛠️ 코드 보기/수정</button>
         </div>
+    </div>
+</div>
+
+<div id="editorScreen" class="flex-grow flex hidden">
+    <div id="blocklyArea" class="flex-grow relative">
+        <div id="blocklyDiv" style="position: absolute; top:0; left:0; right:0; bottom:0;"></div>
+    </div>
+    <div class="w-80 bg-white border-l p-6 flex flex-col shadow-xl">
+        <input id="editTitle" class="text-2xl font-black border-b-2 mb-6 outline-none focus:border-blue-500" value="새 작품">
+        <div class="flex-grow">
+            <h3 class="font-bold text-slate-400 mb-4 uppercase text-xs tracking-widest">오브젝트</h3>
+            <div id="objectList" class="grid grid-cols-3 gap-2"></div>
+        </div>
+        <button onclick="saveProject()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg">공개하기</button>
     </div>
 </div>
 
 <xml id="toolbox" style="display:none">
-    <category name="시작" colour="120"><block type="start"></block></category>
-    <category name="동작" colour="230"><block type="move_dir"></block><block type="change_x"></block></category>
+    <category name="동작" colour="230"><block type="move_x"></block></category>
 </xml>
 
 <script>
-// --- [1] Firebase 설정 (여기에 본인의 Key를 입력하세요!) ---
-const firebaseConfig = {
+// --- 파이어베이스 설정 (본인 키로 교체 필요) ---
+const firebaseConfig = { 
     apiKey: "YOUR_KEY", 
     databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-    projectId: "YOUR_PROJECT"
+    projectId: "YOUR_PROJECT" 
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// --- [2] 변수 및 초기화 ---
-let currentUser = null;
-let workspace, currentPId, isStopped = false;
-let objects = [], activeIdx = 0, initialStates = [];
+// --- 전역 변수 ---
+let currentUser = { id: "test_id", nickname: "지존코더" }; // 임시 유저
+let currentProject = null;
+let objects = [];
+let initialPos = []; // 정지 시 되돌아갈 위치 저장용
+let workspace;
 
-function toggleAuth(isJoin) {
-    document.getElementById('loginForm').classList.toggle('hidden', isJoin);
-    document.getElementById('joinForm').classList.toggle('hidden', !isJoin);
+// --- 화면 전환 로직 ---
+function hideAll() {
+    ['mainScreen', 'projectPage', 'editorScreen'].forEach(id => document.getElementById(id).classList.add('hidden'));
 }
 
-// --- [3] 실시간 계정 시스템 (버그 수정: 서버 저장) ---
-async function handleJoin() {
-    const id = document.getElementById('joinId').value;
-    const pw = document.getElementById('joinPw').value;
-    const nick = document.getElementById('joinNick').value;
-    if(!id || !pw || !nick) return alert("다 적어줘!");
-    
-    const snap = await db.ref('users/' + id).once('value');
-    if(snap.exists()) return alert("이미 있는 아이디야!");
-    
-    await db.ref('users/' + id).set({ id, pw, nickname: nick });
-    alert("가입 성공! 이제 로그인해봐.");
-    toggleAuth(false);
-}
-
-async function handleLogin() {
-    const id = document.getElementById('loginId').value;
-    const pw = document.getElementById('loginPw').value;
-    const snap = await db.ref('users/' + id).once('value');
-    if(snap.exists() && snap.val().pw === pw) {
-        currentUser = snap.val();
-        updateUI();
-    } else alert("아이디나 비밀번호가 틀렸어!");
-}
-
-function handleLogout() { currentUser = null; location.reload(); }
-
-function updateUI() {
-    document.getElementById('authScreen').classList.add('hidden');
-    document.getElementById('topNavbar').classList.remove('hidden');
-    document.getElementById('navNickname').innerText = `👋 ${currentUser.nickname}`;
-    showMain();
-}
-
-// --- [4] 작품 데이터 및 소셜 기능 ---
 function showMain() {
     hideAll(); document.getElementById('mainScreen').classList.remove('hidden');
     db.ref('projects').on('value', (snap) => {
-        const list = [];
-        snap.forEach(child => { list.push({id: child.key, ...child.val()}); });
-        renderList('publicProjectList', list);
+        const grid = document.getElementById('projectGrid');
+        grid.innerHTML = '';
+        snap.forEach(child => {
+            const p = child.val(); p.id = child.key;
+            const card = document.createElement('div');
+            card.className = "bg-white p-5 rounded-[25px] shadow-sm hover:shadow-xl cursor-pointer transition transform hover:-translate-y-1 border border-slate-100";
+            card.innerHTML = `
+                <div class="h-32 bg-slate-50 rounded-2xl mb-4 flex items-center justify-center text-5xl">${p.objects[0].emoji}</div>
+                <div class="font-black text-slate-800 truncate">${p.name}</div>
+                <div class="text-xs text-slate-400 mt-1 font-bold">👤 ${p.authorName}</div>
+                <div class="flex mt-3 space-x-3 text-[10px] font-black text-blue-400 uppercase">
+                    <span>👀 ${p.views || 0}</span> <span>❤️ ${p.likes || 0}</span>
+                </div>
+            `;
+            card.onclick = () => openProjectPage(p);
+            grid.appendChild(card);
+        });
     });
 }
 
-function renderList(target, list) {
-    const box = document.getElementById(target); box.innerHTML = '';
-    list.reverse().forEach(p => {
-        const div = document.createElement('div');
-        div.className = "bg-white p-6 rounded-[35px] shadow-sm hover:shadow-xl cursor-pointer transition border-2 border-slate-100";
-        div.innerHTML = `
-            <div class="h-24 bg-slate-50 flex items-center justify-center text-5xl rounded-3xl mb-4">${p.objects[0].emoji}</div>
-            <div class="font-black text-lg truncate">${p.name}</div>
-            <div class="flex justify-between items-center mt-3 text-xs font-bold">
-                <span class="text-blue-500">By ${p.authorName}</span>
-                <span class="text-slate-400 text-[10px]">❤️ ${p.likes || 0}  👀 ${p.views || 0}</span>
-            </div>
-        `;
-        div.onclick = () => openPlayPage(p);
-        box.appendChild(div);
-    });
-}
-
-// --- [5] 작품 상세 페이지 (조회수/좋아요/초기화 포함) ---
-async function openPlayPage(p) {
-    hideAll(); document.getElementById('playScreen').classList.remove('hidden');
-    document.getElementById('playTitle').innerText = p.name;
-    document.getElementById('playAuthor').innerText = p.authorName;
-    document.getElementById('playViews').innerText = (p.views || 0) + 1;
-    document.getElementById('playLikes').innerText = p.likes || 0;
+// --- [작품 페이지] 엔트리처럼 구현 ---
+function openProjectPage(p) {
+    hideAll(); document.getElementById('projectPage').classList.remove('hidden');
+    currentProject = p;
+    objects = JSON.parse(JSON.stringify(p.objects)); // 복사본 생성
     
-    // 작성자 링크 설정
-    document.getElementById('authorLink').onclick = () => showUserPage(p.authorId, p.authorName);
+    document.getElementById('viewTitle').innerText = p.name;
+    document.getElementById('viewAuthor').innerText = p.authorName;
+    document.getElementById('viewCount').innerText = (p.views || 0) + 1;
+    document.getElementById('viewLikes').innerText = p.likes || 0;
     
-    // 조회수 증가 (실시간 DB 업데이트)
+    // 조회수 증가
     db.ref('projects/' + p.id + '/views').set((p.views || 0) + 1);
     
-    currentPId = p.id;
-    objects = JSON.parse(JSON.stringify(p.objects));
-    initialStates = JSON.parse(JSON.stringify(objects)); // "정지" 시 되돌아갈 곳 저장
-    
-    const eb = document.getElementById('editBtn');
-    if(p.authorId === currentUser.id) {
-        eb.classList.remove('hidden');
-        eb.onclick = () => openEditor(p);
-    } else eb.classList.add('hidden');
-    
-    syncPlayStage();
-}
-
-async function handleLike() {
-    const snap = await db.ref('projects/' + currentPId + '/likes').once('value');
-    const newLikes = (snap.val() || 0) + 1;
-    await db.ref('projects/' + currentPId + '/likes').set(newLikes);
-    document.getElementById('playLikes').innerText = newLikes;
-}
-
-// --- [6] 유저 페이지 (작성자 마이페이지) ---
-function showUserPage(uid, nick) {
-    hideAll(); document.getElementById('userPageScreen').classList.remove('hidden');
-    document.getElementById('userPageName').innerText = `${nick}님의 보관함`;
-    
-    db.ref('projects').orderByChild('authorId').equalTo(uid).on('value', (snap) => {
-        const list = [];
-        let totalViews = 0;
-        snap.forEach(child => { 
-            const p = child.val();
-            list.push({id: child.key, ...p});
-            totalViews += (p.views || 0);
-        });
-        document.getElementById('userPageStats').innerText = `작품 ${list.length}개 · 총 조회수 ${totalViews}회`;
-        renderList('userProjectList', list);
-    });
-}
-
-// --- [7] 실행 엔진 (정지 시 초기화 로직) ---
-function stopCode() {
-    isStopped = true;
-    objects = JSON.parse(JSON.stringify(initialStates)); // 처음 위치로 복구!
-    syncPlayStage();
-    logPlay("> ■ 정지 (초기 상태로 복원됨)");
-}
-
-async function runCode() {
-    isStopped = false; logPlay("> ▶ 실행 시작...");
-    for(let i=0; i<objects.length; i++) {
-        activeIdx = i;
-        if(!objects[i].xml) continue;
-        let code = javascript.javascriptGenerator.workspaceToCode(workspace); // 실제론 각 오브젝트 XML 기반 변환 로직 필요
-        // (간략화된 실행 로직)
-        eval(`(async () => { activeIdx=${i}; ${objects[i].code || ''} })();`);
-    }
-}
-
-function syncPlayStage() {
-    const stage = document.getElementById('playStage'); stage.innerHTML = '';
-    objects.forEach(obj => {
-        const el = document.createElement('div');
-        el.className = "absolute text-5xl transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300 ease-linear";
-        el.style.left = (300 + obj.x) + "px"; el.style.top = (250 - obj.y) + "px";
-        el.innerText = obj.emoji; stage.appendChild(el);
-    });
-}
-
-// (편집기 로직, 블록 정의 등은 이전 버전과 동일하게 작동하도록 구성)
-
-function hideAll() {
-    ['authScreen', 'mainScreen', 'userPageScreen', 'playScreen', 'workspaceScreen'].forEach(id => {
-        const el = document.getElementById(id);
-        if(el) el.classList.add('hidden');
-    });
-}
-
-function openEditor(p = null) {
-    hideAll(); document.getElementById('workspaceScreen').classList.remove('hidden');
-    if(!workspace) {
-        workspace = Blockly.inject('blocklyDiv', { toolbox: document.getElementById('toolbox') });
-    }
-    if(p) {
-        currentPId = p.id; document.getElementById('pName').value = p.name;
-        objects = p.objects;
-    } else {
-        currentPId = Date.now(); document.getElementById('pName').value = "새 작품";
-        objects = [{ emoji: '🤖', x:0, y:0, dir:90, size:100, xml: '' }];
-    }
-    renderEditorSprites();
-}
-
-function saveProject() {
-    const name = document.getElementById('pName').value;
-    const data = {
-        name, objects, authorId: currentUser.id, authorName: currentUser.nickname,
-        views: 0, likes: 0, updated: Date.now()
-    };
-    db.ref('projects/' + currentPId).set(data);
-    alert("서버에 저장됐어! 이제 모두가 볼 수 있어.");
-    showMain();
-}
-
-function logPlay(m) { const c = document.getElementById('playConsole'); c.innerHTML += m + "<br>"; c.scrollTop = c.scrollHeight; }
-
-// 시작 시
-window.onload = () => { if(currentUser) updateUI(); };
-</script>
-
-</body>
-</html>
+    // 수정
