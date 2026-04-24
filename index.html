@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지존짱짱 코딩사이트 V4.5</title>
+
+    <script src="https://unpkg.com/blockly/blockly.min.js"></script>
+    <script src="https://unpkg.com/blockly/blocks_compressed.js"></script>
+    <script src="https://unpkg.com/blockly/javascript_compressed.js"></script>
+    <script src="https://unpkg.com/blockly/msg/ko.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        body { margin:0; background:#f8fafc; overflow:hidden; height:100vh; font-family: 'Pretendard', sans-serif;}
+        .hidden {display:none!important;}
+        #blocklyArea {flex-grow:1; position:relative;}
+        #blocklyDiv {position:absolute; width:100%; height:100%;}
+        .stage-bg { background: linear-gradient(#e2e8f0 1px, transparent 1px) center, linear-gradient(90deg, #e2e8f0 1px, transparent 1px) center; background-size: 100% 2px, 2px 100%; background-repeat: no-repeat; }
+        .obj-active { box-shadow: 0 0 0 3px #3b82f6; background: #eff6ff; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+
+<body class="flex flex-col">
+
+<div id="authScreen" class="fixed inset-0 flex items-center justify-center bg-slate-50 z-50">
+    <div class="bg-white p-10 rounded-3xl w-[400px] shadow-2xl">
+        <div id="loginForm">
+            <h2 class="text-3xl font-extrabold mb-8 text-center text-blue-600">지존짱짱 로그인</h2>
+            <input id="loginId" placeholder="아이디" class="w-full mb-3 p-3 border rounded-xl outline-blue-500">
+            <input id="loginPw" type="password" placeholder="비밀번호" class="w-full mb-6 p-3 border rounded-xl outline-blue-500">
+            <button onclick="handleLogin()" class="w-full bg-blue-600 text-white p-4 rounded-xl font-bold mb-4 hover:bg-blue-700 transition">로그인</button>
+            <p class="text-center text-sm text-gray-500">계정이 없나요? <a href="#" onclick="toggleAuth(true)" class="text-blue-500 underline">회원가입</a></p>
+        </div>
+        <div id="joinForm" class="hidden">
+            <h2 class="text-3xl font-extrabold mb-8 text-center text-green-600">회원가입</h2>
+            <input id="joinId" placeholder="사용할 아이디" class="w-full mb-3 p-3 border rounded-xl outline-green-500">
+            <input id="joinPw" type="password" placeholder="비밀번호" class="w-full mb-3 p-3 border rounded-xl outline-green-500">
+            <input id="joinNick" placeholder="닉네임 (어쩌다코딩=관리자)" class="w-full mb-6 p-3 border rounded-xl outline-green-500">
+            <button onclick="handleJoin()" class="w-full bg-green-600 text-white p-4 rounded-xl font-bold mb-4 hover:bg-green-700 transition">가입하기</button>
+            <p class="text-center text-sm text-gray-500">이미 계정이 있나요? <a href="#" onclick="toggleAuth(false)" class="text-blue-500 underline">로그인</a></p>
+        </div>
+    </div>
+</div>
+
+<nav id="topNavbar" class="hidden h-16 bg-white flex justify-between px-8 items-center border-b shadow-sm shrink-0 z-40">
+    <h1 onclick="showMain()" class="font-black cursor-pointer text-blue-600 text-2xl flex items-center tracking-tighter">지존짱짱 🚀</h1>
+    <div class="flex items-center space-x-6">
+        <button onclick="showMain()" class="hover:text-blue-500 font-bold">🏠 홈</button>
+        <button onclick="showMyPage()" class="hover:text-blue-500 font-bold">📦 마이페이지</button>
+        <button onclick="toggleChat()" class="text-white font-bold bg-indigo-500 px-4 py-2 rounded-full hover:bg-indigo-600 transition shadow-md">💬 이야기</button>
+        <div class="flex items-center space-x-2 border-l pl-6">
+            <span id="navNickname" class="text-sm font-bold text-slate-700"></span>
+            <button onclick="handleLogout()" class="text-red-500 text-xs font-bold hover:underline">로그아웃</button>
+        </div>
+    </div>
+</nav>
+
+<div id="chatOverlay" class="hidden fixed right-5 bottom-5 w-80 h-[450px] bg-white border border-gray-300 rounded-2xl shadow-2xl flex flex-col z-50">
+    <div class="bg-indigo-600 text-white font-bold p-4 rounded-t-2xl flex justify-between items-center">
+        <span>💬 지존짱짱 이야기</span>
+        <button onclick="toggleChat()" class="text-white hover:opacity-70 text-xl">×</button>
+    </div>
+    <div id="chatMessages" class="flex-grow p-4 overflow-y-auto text-sm space-y-3 bg-slate-50"></div>
+    <div class="p-3 border-t flex bg-white rounded-b-2xl">
+        <input id="chatInput" onkeypress="if(event.key==='Enter') sendChat()" placeholder="메시지를 입력하세요..." class="flex-grow border rounded-l-lg p-2 text-sm outline-none focus:border-indigo-500">
+        <button onclick="sendChat()" class="bg-indigo-500 text-white px-4 rounded-r-lg text-sm font-bold">전송</button>
+    </div>
+</div>
+
+<div id="mainScreen" class="hidden p-10 overflow-y-auto h-full bg-slate-50">
+    <div class="flex justify-between items-center mb-10 max-w-7xl mx-auto">
+        <div>
+            <h2 class="text-3xl font-black text-slate-800">모두의 작품 🌏</h2>
+            <p class="text-slate-500">전 세계 친구들의 코드를 구경해보세요.</p>
+        </div>
+        <button onclick="startApp()" class="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black hover:bg-blue-700 shadow-xl transition-all active:scale-95 text-lg">+ 새 작품 만들기</button>
+    </div>
+    <div id="publicProjectList" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8 max-w-7xl mx-auto"></div>
+</div>
+
+<div id="myPageScreen" class="hidden p-10 overflow-y-auto h-full bg-white">
+    <div class="max-w-7xl mx-auto">
+        <div class="flex flex-col mb-10 border-b pb-6">
+            <h2 id="myPageTitle" class="text-4xl font-black text-slate-800">📦 마이페이지</h2>
+            <p class="text-slate-500 mt-2 text-lg">나만 볼 수 있는 비공개 작품까지 모두 모여있어요.</p>
+        </div>
+        <div id="myProjectList" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8"></div>
+    </div>
+</div>
+
+<div id="workspaceScreen" class="hidden flex flex-col h-screen">
+    <header class="bg-slate-900 text-white p-4 flex justify-between items-center z-10 shadow-lg">
+        <div class="flex items-center space-x-4">
+            <div class="bg-blue-500 p-2 rounded-lg">🚀</div>
+            <span id="pName" class="font-black text-xl">새 작품</span>
+        </div>
+        <div class="space-x-2">
+            <button onclick="saveProject()" class="bg-blue-600 px-5 py-2 rounded-xl font-bold hover:bg-blue-500 transition">저장</button>
+            <button onclick="runCode()" class="bg-green-600 px-5 py-2 rounded-xl font-bold hover:bg-green-500 transition">▶ 실행</button>
+            <button onclick="stopCode()" class="bg-red-600 px-5 py-2 rounded-xl font-bold hover:bg-red-500 transition">■ 정지</button>
+            <button onclick="showMain()" class="bg-slate-700 px-5 py-2 rounded-xl font-bold hover:bg-slate-600 transition">나가기</button>
+        </div>
+    </header>
+
+    <div class="flex flex-grow overflow-hidden">
+        <div id="blocklyArea" class="w-2/3 shadow-inner"><div id="blocklyDiv"></div></div>
+        
+        <div class="w-1/3 p-5 bg-slate-100 border-l flex flex-col min-w-[360px] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-black text-slate-700">무대</h3>
+                <button onclick="openObjectModal()" class="text-xs bg-indigo-600 text-white px-3 py-2 rounded-lg font-bold shadow-md hover:bg-indigo-700">+ 오브젝트 추가</button>
+            </div>
+            
+            <div id="stage" class="w-[300px] h-[220px] bg-white border-2 border-slate-300 relative rounded-2xl shadow-inner stage-bg mx-auto mb-4"></div>
+
+            <h3 class="text-xs font-bold text-gray-400 mb-2 uppercase tracking-widest">오브젝트 목록</h3>
+            <div id="spriteList" class="flex space-x-2 overflow-x-auto p-2 mb-4 bg-slate-200 rounded-xl min-h-[64px]"></div>
+
+            <div class="bg-white p-4 border rounded-2xl shadow-sm w-[310px] mx-auto">
+                <div class="flex justify-between items-center mb-3">
+                    <h4 class="text-sm font-black text-slate-800">속성 편집</h4>
+                    <button onclick="deleteActiveObject()" class="text-[10px] text-red-500 font-bold hover:underline">삭제</button>
+                </div>
+                <div class="grid grid-cols-2 gap-3 text-xs font-bold">
+                    <div class="flex flex-col"><span>X좌표</span><input id="inpX" type="number" class="mt-1 border p-2 rounded-lg text-center" onchange="updateObjFromInput()"></div>
+                    <div class="flex flex-col"><span>Y좌표</span><input id="inpY" type="number" class="mt-1 border p-2 rounded-lg text-center" onchange="updateObjFromInput()"></div>
+                    <div class="flex flex-col"><span>방향(도)</span><input id="inpDir" type="number" class="mt-1 border p-2 rounded-lg text-center" onchange="updateObjFromInput()"></div>
+                    <div class="flex flex-col"><span>크기(%)</span><input id="inpSize" type="number" class="mt-1 border p-2 rounded-lg text-center" onchange="updateObjFromInput()"></div>
+                </div>
+            </div>
+
+            <div id="console" class="bg-slate-900 text-green-400 h-28 text-[11px] mt-6 p-4 rounded-2xl font-mono overflow-y-auto leading-relaxed shadow-xl"></div>
+        </div>
+    </div>
+</div>
+
+<div id="objectModal" class="hidden fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50">
+    <div class="bg-white p-8 rounded-3xl shadow-2xl w-96 text-center">
+        <h3 class="font-black text-2xl mb-6">새 오브젝트 선택</h3>
+        <div class="grid grid-cols-4 gap-6 text-4xl mb-8">
+            <button class="hover:scale-125 transition active:scale-90" onclick="addObject('🤖')">🤖</button>
+            <button class="hover:scale-125 transition active:scale-90" onclick="addObject('🐱')">🐱</button>
+            <button class="hover:scale-125 transition active:scale-90" onclick="addObject('🐶')">🐶</button>
+            <button class="hover:scale-125 transition active:scale-90" onclick="addObject('🚀')">🚀</button>
+            <button class="hover:scale-125 transition active:scale-90" onclick="addObject('🚗')">🚗</button>
+            <button class="hover:scale-125 transition active:scale-90" onclick="addObject('👻')">👻</button>
+            <button class="hover:scale-125 transition active:scale-90" onclick="addObject('🦖')">🦖</button>
+            <button class="hover:scale-125 transition active:scale-90" onclick="addObject('⭐')">⭐</button>
+        </div>
+        <button onclick="closeObjectModal()" class="w-full bg-slate-100 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-200">취소</button>
+    </div>
+</div>
+
+<xml id="toolbox" style="display:none">
+    <category name="시작" colour="120"><block type="start"></block></category>
+    <category name="동작" colour="230">
+        <block type="move_dir"><value name="STEPS"><shadow type="math_number"><field name="NUM">10</field></shadow></value></block>
+        <block type="change_x"><value name="VAL"><shadow type="math_number"><field name="NUM">10</field></shadow></value></block>
+        <block type="change_y"><value name="VAL"><shadow type="math_number"><field name="NUM">10</field></shadow></value></block>
+    </category>
+    <category name="계산" colour="210">
+        <block type="math_number"></block>
+        <block type="math_arithmetic"></block>
+        <block type="math_random_int"><value name="FROM"><shadow type="math_number"><field name="NUM">1</field></shadow></value><value name="TO"><shadow type="math_number"><field name="NUM">100</field></shadow></value></block>
+    </category>
+    <category name="변수" custom="VARIABLE" colour="330"></category>
+</xml>
+
+<script>
+/* -----------------------------------------------------------
+   [ 핵심 로직 시작 ]
+------------------------------------------------------------ */
+
+let users = JSON.parse(localStorage.getItem('users')) || [];
+let currentUser = JSON.parse(localStorage.getItem('currentUser'));
+let projects = JSON.parse(localStorage.getItem('projects')) || [];
+let workspace = null;
+let currentId = null;
+let isStopped = false;
+let isAdmin = false;
+let objects = [];
+let activeObjIndex = 0;
+
+// [1] 인증 & UI 업데이트
+function toggleAuth(isJoin) {
+    document.getElementById('loginForm').classList.toggle('hidden', isJoin);
+    document.getElementById('joinForm').classList.toggle('hidden', !isJoin);
+}
+
+function handleJoin() {
+    const id = document.getElementById('joinId').value.trim();
+    const pw = document.getElementById('joinPw').value;
+    const nick = document.getElementById('joinNick').value.trim();
+    if(!id || !pw || !nick) return alert("빈칸을 채워주세요!");
+    if(users.some(u => u.id === id || u.nickname === nick)) return alert("이미 있는 아이디나 닉네임이에요!");
+    users.push({id, pw, nickname: nick});
+    localStorage.setItem('users', JSON.stringify(users));
+    alert("가입 성공! 로그인 하세요."); toggleAuth(false);
+}
+
+function handleLogin(){
+    const id = document.getElementById('loginId').value;
+    const pw = document.getElementById('loginPw').value;
+    const user = users.find(u => u.id == id && u.pw == pw);
+    if(user){ 
+        currentUser = user; 
+        localStorage.setItem('currentUser', JSON.stringify(user)); 
+        updateUI(); 
+    } else alert("아이디/비번을 확인하세요!");
+}
+
+function handleLogout(){ localStorage.removeItem('currentUser'); location.reload(); }
+
+function updateUI(){
+    if(currentUser){
+        isAdmin = (currentUser.nickname === '어쩌다코딩');
+        document.getElementById('authScreen').classList.add('hidden'); 
+        document.getElementById('topNavbar').classList.remove('hidden');
+        document.getElementById('navNickname').innerText = isAdmin ? `👑 관리자 (어쩌다코딩)` : `${currentUser.nickname}님`;
+        showMain();
+    }
+}
+
+// [2] 화면 전환
+function hideAllScreens() { ['mainScreen', 'myPageScreen', 'workspaceScreen'].forEach(s => document.getElementById(s).classList.add('hidden')); }
+
+function showMain(){ 
+    hideAllScreens(); document.getElementById('mainScreen').classList.remove('hidden'); 
+    let list = projects.filter(p => p.isPublic || p.isStaffPick || isAdmin);
+    renderProjectList('publicProjectList', list); 
+}
+
+function showMyPage(){ 
+    hideAllScreens(); document.getElementById('myPageScreen').classList.remove('hidden'); 
+    document.getElementById('myPageTitle').innerText = `📦 ${currentUser.nickname}님의 보관함`;
+    renderProjectList('myProjectList', projects.filter(p => p.authorId === currentUser.id), true); 
+}
+
+// [3] 프로젝트 렌더링
+function renderProjectList(targetId, list, isMyPage = false){
+    const box = document.getElementById(targetId); box.innerHTML = '';
+    if(list.length === 0){ box.innerHTML = '<p class="col-span-full text-center text-gray-400 py-20">작품이 아직 없어요.</p>'; return; }
+    
+    list.sort((a,b) => (b.isStaffPick ? 1 : 0) - (a.isStaffPick ? 1 : 0));
+    list.forEach(p => {
+        let div = document.createElement('div'); 
+        div.className = `bg-white border-2 rounded-3xl p-6 shadow-sm cursor-pointer hover:shadow-2xl hover:-translate-y-2 transition-all ${p.isStaffPick ? 'border-yellow-400 bg-yellow-50/30' : 'border-slate-100'}`;
+        
+        let badges = '';
+        if(!p.isPublic && isAdmin && !isMyPage) badges += '<span class="text-[10px] bg-red-100 text-red-600 px-2 py-1 rounded-lg font-bold mr-1">비공개</span>';
+        if(p.isStaffPick) badges += '<span class="text-[10px] bg-yellow-400 text-white px-2 py-1 rounded-lg font-bold">🌟스선</span>';
+        
+        let adminBtn = isAdmin ? `<button onclick="toggleStaffPick(event, ${p.id})" class="mt-4 text-[10px] bg-slate-800 text-white px-3 py-2 rounded-lg w-full hover:bg-black">${p.isStaffPick ? '스선 해제' : '👑 스태프 선정'} ✨</button>` : '';
+
+        div.innerHTML = `
+            <div class="h-24 flex items-center justify-center text-5xl mb-4 bg-slate-50 rounded-2xl">🤖</div>
+            <div class="font-black text-xl truncate text-slate-800 mb-1">${p.name}</div>
+            <div class="flex mb-3">${badges}</div>
+            <div class="text-sm font-bold text-slate-400">By ${p.authorName}</div>
+            ${adminBtn}
+        `;
+        div.onclick = () => loadProject(p); box.appendChild(div);
+    });
+}
+
+function toggleStaffPick(e, id) {
+    e.stopPropagation();
+    let p = projects.find(p => p.id === id);
+    p.isStaffPick = !p.isStaffPick;
+    localStorage.setItem('projects', JSON.stringify(projects));
+    showMain();
+}
+
+// [4] 실시간 채팅
+function toggleChat() {
+    const chat = document.getElementById('chatOverlay');
+    if(chat.classList.contains('hidden')) {
+        chat.classList.remove('hidden'); renderChat();
+        window.chatTimer = setInterval(renderChat, 1000);
+    } else { chat.classList.add('hidden'); clearInterval(window.chatTimer); }
+}
+
+function renderChat() {
+    let msgs = JSON.parse(localStorage.getItem('globalChat')) || [];
+    const box = document.getElementById('chatMessages');
+    box.innerHTML = msgs.map(m => `
+        <div class="${m.user === currentUser.nickname ? 'text-right' : 'text-left'}">
+            <div class="text-[10px] text-slate-400 mb-1 font-bold">${m.user}</div>
+            <div class="inline-block px-4 py-2 rounded-2xl shadow-sm ${m.user === currentUser.nickname ? 'bg-indigo-500 text-white rounded-tr-none' : 'bg-white text-slate-800 rounded-tl-none border border-slate-100'}">
+                ${m.msg}
+            </div>
+        </div>
+    `).join('');
+    box.scrollTop = box.scrollHeight;
+}
+
+function sendChat() {
+    const inp = document.getElementById('chatInput');
+    if(!inp.value.trim()) return;
+    let msgs = JSON.parse(localStorage.getItem('globalChat')) || [];
+    msgs.push({ user: currentUser.nickname, msg: inp.value });
+    if(msgs.length > 30) msgs.shift();
+    localStorage.setItem('globalChat', JSON.stringify(msgs));
+    inp.value = ''; renderChat();
+}
+
+// [5] 다중 오브젝트 시스템
+function openObjectModal() { document.getElementById('objectModal').classList.remove('hidden'); }
+function closeObjectModal() { document.getElementById('objectModal').classList.add('hidden'); }
+
+function addObject(emoji) {
+    objects.push({ emoji: emoji, x: 0, y: 0, dir: 90, size: 100, xml: '' });
+    closeObjectModal(); setActiveObject(objects.length - 1);
+}
+
+function deleteActiveObject() {
+    if(objects.length <= 1) return alert("오브젝트는 적어도 하나 있어야 합니다!");
+    if(confirm("이 오브젝트의 코드가 모두 삭제됩니다. 삭제할까요?")) {
+        objects.splice(activeObjIndex, 1);
+        setActiveObject(0);
+    }
+}
+
+function setActiveObject(idx) {
+    if(workspace && objects[activeObjIndex]) objects[activeObjIndex].xml = Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(workspace));
+    activeObjIndex = idx;
+    workspace.clear();
+    if(objects[activeObjIndex].xml) Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(objects[activeObjIndex].xml), workspace);
+    syncStageAndUI();
+}
+
+function syncStageAndUI() {
+    const stage = document.getElementById('stage'); stage.innerHTML = '';
+    objects.forEach((obj, idx) => {
+        let el = document.createElement('div');
+        el.className = `absolute text-4xl transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300 ease-linear cursor-pointer ${idx === activeObjIndex ? 'z-20 drop-shadow-2xl' : 'opacity-60'}`;
+        el.style.left = (150 + obj.x) + "px"; el.style.top = (110 - obj.y) + "px";
+        el.style.transform = `translate(-50%, -50%) rotate(${obj.dir - 90}deg) scale(${obj.size / 100})`;
+        el.innerText = obj.emoji; el.onclick = () => setActiveObject(idx);
+        stage.appendChild(el);
+    });
+
+    const list = document.getElementById('spriteList');
+    list.innerHTML = objects.map((obj, idx) => `
+        <div onclick="setActiveObject(${idx})" class="w-12 h-12 flex-shrink-0 flex items-center justify-center text-2xl border-4 rounded-2xl cursor-pointer transition ${idx === activeObjIndex ? 'border-blue-500 bg-blue-50 shadow-lg' : 'border-white bg-white opacity-50'}">${obj.emoji}</div>
+    `).join('');
+
+    let active = objects[activeObjIndex];
+    document.getElementById('inpX').value = Math.round(active.x);
+    document.getElementById('inpY').value = Math.round(active.y);
+    document.getElementById('inpDir').value = Math.round(active.dir);
+    document.getElementById('inpSize').value = Math.round(active.size);
+}
+
+function updateObjFromInput() {
+    let active = objects[activeObjIndex];
+    active.x = Number(document.getElementById('inpX').value);
+    active.y = Number(document.getElementById('inpY').value);
+    active.dir = Number(document.getElementById('inpDir').value);
+    active.size = Number(document.getElementById('inpSize').value);
+    syncStageAndUI();
+}
+
+// [6] 실행 로직 (버그 수정: 0,0 초기화 방지)
+function stopCode() { isStopped = true; logConsole("<span class='text-red-400 font-bold'>[■ 정지됨]</span>"); }
+async function checkDelay() { if (isStopped) throw new Error("STOPPED"); await new Promise(res => setTimeout(res, 300)); }
+function logConsole(msg) { let c = document.getElementById('console'); c.innerHTML += msg + "<br>"; c.scrollTop = c.scrollHeight; }
+
+window.cmdMoveDir = async (steps) => {
+    await checkDelay(); let obj = objects[activeObjIndex];
+    let rad = (90 - obj.dir) * Math.PI / 180;
+    obj.x += steps * Math.cos(rad); obj.y += steps * Math.sin(rad);
+    syncStageAndUI(); logConsole(`🚀 이동방향으로 ${steps}만큼 이동`);
+};
+window.cmdChangeX = async (val) => { await checkDelay(); objects[activeObjIndex].x += val; syncStageAndUI(); logConsole(`➡️ X좌표 ${val}만큼 이동`); };
+window.cmdChangeY = async (val) => { await checkDelay(); objects[activeObjIndex].y += val; syncStageAndUI(); logConsole(`⬆️ Y좌표 ${val}만큼 이동`); };
+
+async function runCode() {
+    isStopped = false; document.getElementById('console').innerHTML = "<span class='text-blue-400 font-bold'>[▶ 시작]</span><br>";
+    let code = javascript.javascriptGenerator.workspaceToCode(workspace);
+    if(!code.trim()) return alert("블록을 먼저 연결해 주세요!");
+    let asyncCode = `(async () => { try { ${code} } catch(e) { if(e.message !== "STOPPED") console.error(e); } })();`;
+    try { eval(asyncCode); } catch (e) { console.error(e); }
+}
+
+// [7] 블록 정의
+Blockly.Blocks['start'] = { init: function() { this.appendDummyInput().appendField("🚀 시작할 때"); this.setNextStatement(true); this.setColour(120); } };
+javascript.javascriptGenerator.forBlock['start'] = function() { return ""; };
+Blockly.Blocks['move_dir'] = { init: function() { this.appendValueInput("STEPS").setCheck("Number").appendField("이동방향으로"); this.appendDummyInput().appendField("만큼 이동"); this.setInputsInline(true); this.setPreviousStatement(true); this.setNextStatement(true); this.setColour(230); } };
+javascript.javascriptGenerator.forBlock['move_dir'] = function(block) { let s = javascript.javascriptGenerator.valueToCode(block, 'STEPS', javascript.javascriptGenerator.ORDER_ATOMIC) || 0; return `await cmdMoveDir(${s});\n`; };
+Blockly.Blocks['change_x'] = { init: function() { this.appendValueInput("VAL").setCheck("Number").appendField("x좌표를"); this.appendDummyInput().appendField("만큼 바꾸기"); this.setInputsInline(true); this.setPreviousStatement(true); this.setNextStatement(true); this.setColour(230); } };
+javascript.javascriptGenerator.forBlock['change_x'] = function(block) { let v = javascript.javascriptGenerator.valueToCode(block, 'VAL', javascript.javascriptGenerator.ORDER_ATOMIC) || 0; return `await cmdChangeX(${v});\n`; };
+Blockly.Blocks['change_y'] = { init: function() { this.appendValueInput("VAL").setCheck("Number").appendField("y좌표를"); this.appendDummyInput().appendField("만큼 바꾸기"); this.setInputsInline(true); this.setPreviousStatement(true); this.setNextStatement(true); this.setColour(230); } };
+javascript.javascriptGenerator.forBlock['change_y'] = function(block) { let v = javascript.javascriptGenerator.valueToCode(block, 'VAL', javascript.javascriptGenerator.ORDER_ATOMIC) || 0; return `await cmdChangeY(${v});\n`; };
+
+// [8] 프로젝트 관리
+function startApp(isNew = true){
+    hideAllScreens(); document.getElementById('workspaceScreen').classList.remove('hidden');
+    if(!workspace) workspace = Blockly.inject('blocklyDiv', { toolbox: document.getElementById('toolbox'), grid: {spacing: 20, length: 3, colour: '#f1f5f9', snap: true} });
+    if(isNew) {
+        workspace.clear(); currentId = Date.now(); document.getElementById('pName').innerText = "새 작품";
+        objects = [{ emoji: '🤖', x:0, y:0, dir:90, size:100, xml: '' }]; setActiveObject(0);
+    }
+}
+
+function loadProject(p) {
+    startApp(false); currentId = p.id; document.getElementById('pName').innerText = p.name;
+    objects = p.objects || [{ emoji: '🤖', x:0, y:0, dir:90, size:100, xml: p.xml || '' }];
+    setActiveObject(0);
+}
+
+function saveProject(){
+    let name = prompt("작품 이름을 입력하세요.", document.getElementById('pName').innerText); if(!name) return;
+    let isPublic = confirm("다른 사람들에게 이 작품을 공개하시겠습니까?");
+    objects[activeObjIndex].xml = Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(workspace));
+    let old = projects.find(p => p.id == currentId);
+    let isStaffPick = old ? old.isStaffPick : false;
+    let data = { id: currentId, name, objects, authorId: currentUser.id, authorName: currentUser.nickname, isPublic, isStaffPick };
+    if(old) projects[projects.indexOf(old)] = data; else projects.push(data);
+    localStorage.setItem('projects', JSON.stringify(projects)); alert("성공적으로 저장되었습니다!"); showMyPage();
+}
+
+window.onload = updateUI;
+</script>
+</body>
+</html>
