@@ -2,225 +2,153 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>지존짱짱 V9 - 소셜 코딩 플랫폼</title>
+    <title>지존짱짱 - Made by 어쩌다코딩</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
-    <script src="https://unpkg.com/blockly/blockly.min.js"></script>
-    <script src="https://unpkg.com/blockly/javascript_compressed.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { margin:0; background:#f0f2f5; height:100vh; font-family: 'Pretendard', sans-serif; overflow: hidden; }
-        .hidden { display:none !important; }
-        .play-stage { width: 640px; height: 360px; background: white; border: 4px solid #334155; position: relative; overflow: hidden; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
-        .sprite { position: absolute; transition: all 0.2s linear; transform: translate(-50%, -50%); cursor: pointer; user-select: none; }
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        body { font-family: 'Pretendard', sans-serif; background-color: #f8fbff; margin: 0; }
+        .hidden { display: none !important; }
+        
+        /* 쫀득한 UI 디자인 유지 */
+        .login-card { background: white; padding: 45px; border-radius: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.05); width: 400px; border: 1px solid #f1f5f9; }
+        .input-box { width: 100%; background: #f8fafc; border: 2px solid #f1f5f9; padding: 16px; border-radius: 20px; outline: none; transition: 0.2s; font-weight: 600; margin-bottom: 12px; }
+        .input-box:focus { border-color: #3b82f6; background: white; }
+        
+        .nav-btn { font-weight: 700; color: #475569; display: flex; align-items: center; gap: 6px; }
+        .active-pill { background-color: #4f46e5; color: white !important; padding: 6px 18px; border-radius: 999px; }
     </style>
 </head>
-<body class="flex flex-col">
+<body class="min-h-screen flex flex-col">
 
-<nav id="navbar" class="h-16 bg-white border-b px-8 flex justify-between items-center z-50">
-    <h1 onclick="showMain()" class="text-2xl font-black text-blue-600 cursor-pointer italic">ZIZON ZZANG</h1>
-    <div id="navMenu" class="flex items-center space-x-6 font-bold text-slate-600">
-        <button onclick="showMain()">🏠 메인</button>
-        <button onclick="openEditor()">➕ 만들기</button>
-        <div class="bg-blue-50 px-4 py-2 rounded-full text-sm text-blue-600">
-            👤 <span id="userNameDisplay">어쩌다코딩</span>
+<nav id="topNav" class="bg-white border-b px-10 py-4 flex justify-between items-center hidden sticky top-0 z-50">
+    <div class="flex items-center gap-2"><span class="text-2xl font-black text-blue-600 italic">지존짱짱 🚀</span></div>
+    <div class="flex items-center gap-8 font-bold">
+        <div class="flex gap-8 items-center">
+            <button class="nav-btn">🏠 홈</button>
+            <button class="nav-btn">📂 마이페이지</button>
+            <button class="nav-btn active-pill">💬 이야기</button>
+        </div>
+        <div class="h-6 w-[1px] bg-slate-200 mx-2"></div>
+        <div class="flex items-center gap-3">
+            <span id="adminTag" class="hidden text-[10px] bg-yellow-400 px-2 py-0.5 rounded font-black shadow-sm">운영자</span>
+            <span class="text-sm font-bold text-slate-600"><span id="nickDisplay" class="text-blue-600"></span>님</span>
+            <button onclick="handleLogout()" class="text-xs text-slate-400 font-bold hover:text-red-500 underline">로그아웃</button>
         </div>
     </div>
 </nav>
 
-<div id="mainScreen" class="flex-grow overflow-y-auto p-10 hidden">
-    <div class="max-w-6xl mx-auto">
-        <h2 class="text-3xl font-black mb-8 text-slate-800">공개된 작품들 ✨</h2>
-        <div id="projectGrid" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
-    </div>
-</div>
-
-<div id="projectPage" class="flex-grow flex flex-col items-center justify-center p-6 hidden bg-slate-50 overflow-y-auto">
-    <div class="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div class="lg:col-span-2 flex flex-col items-center">
-            <div id="playStage" class="play-stage mb-4"></div>
-            <div class="flex space-x-3 w-full justify-center">
-                <button onclick="runProject()" class="bg-green-500 hover:bg-green-600 text-white px-10 py-3 rounded-2xl font-black shadow-lg transition">▶ 시작하기</button>
-                <button onclick="stopProject()" class="bg-red-500 hover:bg-red-600 text-white px-10 py-3 rounded-2xl font-black shadow-lg transition">■ 정지하기</button>
-            </div>
+<div id="authContainer" class="flex-grow flex items-center justify-center">
+    <div class="login-card text-center relative">
+        <h2 class="text-3xl font-black mb-1 text-slate-800 tracking-tight">지존짱짱 👋</h2>
+        <p class="text-[10px] text-blue-400 font-black mb-8 tracking-widest uppercase">Made by 어쩌다코딩</p>
+        
+        <div id="loginArea">
+            <input id="loginId" type="text" placeholder="아이디" class="input-box">
+            <input id="loginPw" type="password" placeholder="비밀번호" class="input-box">
+            <button onclick="authAction('login')" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-lg shadow-lg mb-4 hover:scale-[1.02] active:scale-95 transition-all">로그인</button>
+            <button onclick="toggleView(true)" class="text-slate-400 font-bold text-sm hover:text-blue-500 underline decoration-2">처음이신가요? 회원가입</button>
         </div>
-        <div class="bg-white p-8 rounded-[30px] shadow-sm border border-slate-200 flex flex-col">
-            <h2 id="viewTitle" class="text-3xl font-black mb-2 text-slate-800">작품 제목</h2>
-            
-            <div onclick="goToUserPage()" class="flex items-center space-x-3 mb-6 p-4 bg-blue-50 rounded-2xl cursor-pointer hover:bg-blue-100 transition border border-blue-100">
-                <span class="text-3xl">👤</span>
-                <div>
-                    <div class="text-xs text-blue-500 font-bold uppercase">Creator</div>
-                    <div id="viewAuthor" class="font-black text-slate-700 text-lg">작성자 닉네임</div>
-                </div>
-            </div>
 
-            <div class="flex justify-around mb-8 border-y py-6">
-                <div class="text-center">
-                    <div class="text-slate-400 text-xs font-bold mb-1">조회수</div>
-                    <div id="viewCount" class="text-2xl font-black text-slate-700">0</div>
-                </div>
-                <div class="text-center">
-                    <div class="text-slate-400 text-xs font-bold mb-1">좋아요</div>
-                    <div id="likeCount" class="text-2xl font-black text-pink-500">0</div>
-                </div>
-            </div>
-
-            <button onclick="handleLike()" class="w-full bg-pink-50 text-pink-500 py-4 rounded-2xl font-black mb-4 hover:bg-pink-100 transition text-xl">❤️ 좋아요 꾹!</button>
-            <button id="editBtn" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-black hidden hover:bg-slate-700 transition">🛠️ 코드 보기/수정</button>
+        <div id="signupArea" class="hidden">
+            <input id="regId" type="text" placeholder="아이디 정하기" class="input-box">
+            <input id="regNick" type="text" placeholder="닉네임 정하기" class="input-box">
+            <input id="regPw" type="password" placeholder="비밀번호 (6자 이상)" class="input-box">
+            <button onclick="authAction('signup')" class="w-full bg-green-500 text-white py-4 rounded-2xl font-black text-lg shadow-lg mb-4 hover:scale-[1.02] active:scale-95 transition-all">가입 완료</button>
+            <button onclick="toggleView(false)" class="text-slate-400 font-bold text-sm hover:text-blue-500 underline decoration-2">이미 계정이 있어요</button>
         </div>
     </div>
 </div>
 
-<div id="editorScreen" class="flex-grow flex hidden">
-    <div id="blocklyArea" class="flex-grow relative">
-        <div id="blocklyDiv" style="position: absolute; top:0; left:0; right:0; bottom:0;"></div>
-    </div>
-    <div class="w-80 bg-white border-l p-6 flex flex-col shadow-xl">
-        <input id="editTitle" class="text-2xl font-black border-b-2 mb-6 outline-none focus:border-blue-500" value="새 작품">
-        <div class="flex-grow">
-            <h3 class="font-bold text-slate-400 mb-4 uppercase text-xs">오브젝트 설정</h3>
-            <div id="objectList" class="grid grid-cols-3 gap-2"></div>
-        </div>
-        <button onclick="saveProject()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg">🚀 작품 공개하기</button>
-    </div>
+<div id="mainContent" class="hidden p-20 text-center flex-grow">
+    <h1 class="text-5xl font-black text-slate-800 mb-6">로그인 성공! 🎉</h1>
+    <p class="text-slate-400 font-bold text-xl mb-10">상단 메뉴에서 다른 친구들과 이야기를 나눠보세요.</p>
 </div>
-
-<xml id="toolbox" style="display:none">
-    <category name="동작" colour="230"><block type="move_x"></block></category>
-</xml>
 
 <script>
-// --- 파이어베이스 설정 (네 설정값 넣는 곳) ---
+// Firebase 설정 (기존 값 유지)
 const firebaseConfig = {
-    apiKey: "AIzaSyDdFsRGy_2mZowYinOf9LeQhot08xyaqc4",
-    authDomain: "zizon-coding.firebaseapp.com",
-    projectId: "zizon-coding",
-    storageBucket: "zizon-coding.firebasestorage.app",
-    messagingSenderId: "146850583672",
-    appId: "1:146850583672:web:243e71867880c00ffdc98d",
-    measurementId: "G-1J0CJ55MNS",
-    databaseURL: "https://zizon-coding-default-rtdb.firebaseio.com"
+  apiKey: "AIzaSyDdFsRGy_2mZowYinOf9LeQhot08xyaqc4",
+  authDomain: "zizon-coding.firebaseapp.com",
+  projectId: "zizon-coding",
+  storageBucket: "zizon-coding.firebasestorage.app",
+  messagingSenderId: "146850583672",
+  appId: "1:146850583672:web:243e71867880c00ffdc98d",
+  databaseURL: "https://zizon-coding-default-rtdb.firebaseio.com"
 };
+
 firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
 const db = firebase.database();
 
-let currentUser = { id: "user_minwoo", nickname: "어쩌다코딩" }; 
-let currentProject = null;
-let objects = [];
-let initialPos = []; // [핵심] 리셋용 초기 위치 저장
-let workspace;
-
-function hideAll() {
-    ['mainScreen', 'projectPage', 'editorScreen'].forEach(id => document.getElementById(id).classList.add('hidden'));
+// 화면 전환 함수
+function toggleView(isSignup) {
+    document.getElementById('loginArea').classList.toggle('hidden', isSignup);
+    document.getElementById('signupArea').classList.toggle('hidden', !isSignup);
 }
 
-function showMain() {
-    hideAll(); document.getElementById('mainScreen').classList.remove('hidden');
-    db.ref('projects').on('value', (snap) => {
-        const grid = document.getElementById('projectGrid');
-        grid.innerHTML = '';
-        snap.forEach(child => {
-            const p = child.val(); p.id = child.key;
-            const card = document.createElement('div');
-            card.className = "bg-white p-5 rounded-[25px] shadow-sm hover:shadow-xl cursor-pointer transition transform hover:-translate-y-1 border border-slate-100";
-            card.innerHTML = `
-                <div class="h-32 bg-slate-50 rounded-2xl mb-4 flex items-center justify-center text-5xl">${p.objects[0].emoji}</div>
-                <div class="font-black text-slate-800 truncate">${p.name}</div>
-                <div class="text-xs text-slate-400 mt-1 font-bold">👤 ${p.authorName}</div>
-                <div class="flex mt-3 space-x-3 text-[10px] font-black text-blue-400 uppercase">
-                    <span>👀 ${p.views || 0}</span> <span>❤️ ${p.likes || 0}</span>
-                </div>
-            `;
-            card.onclick = () => openProjectPage(p);
-            grid.appendChild(card);
-        });
-    });
-}
+// 🛠️ 강력하게 수리된 인증 함수
+async function authAction(type) {
+    if (type === 'signup') {
+        const id = document.getElementById('regId').value.trim();
+        const nick = document.getElementById('regNick').value.trim();
+        const pw = document.getElementById('regPw').value.trim();
 
-// [핵심] 작품 페이지 진입 (조회수 증가 및 리셋 포인트 설정)
-function openProjectPage(p) {
-    hideAll(); document.getElementById('projectPage').classList.remove('hidden');
-    currentProject = p;
-    
-    // 작품 데이터 로드
-    objects = JSON.parse(JSON.stringify(p.objects));
-    initialPos = JSON.parse(JSON.stringify(p.objects)); // [중요] 시작 전 위치 박제
-    
-    document.getElementById('viewTitle').innerText = p.name;
-    document.getElementById('viewAuthor').innerText = p.authorName;
-    document.getElementById('viewCount').innerText = (p.views || 0) + 1;
-    document.getElementById('likeCount').innerText = p.likes || 0;
-    
-    // 서버에 조회수 +1
-    db.ref('projects/' + p.id + '/views').set((p.views || 0) + 1);
-    
-    const eb = document.getElementById('editBtn');
-    if(p.authorId === currentUser.id) {
-        eb.classList.remove('hidden');
-        eb.onclick = () => openEditor(p);
-    } else eb.classList.add('hidden');
+        if(!id || !nick || !pw) return alert("모든 빈칸을 채워줘!");
+        if(pw.length < 6) return alert("비밀번호는 6자 이상이어야 해!");
 
-    renderStage();
-}
+        try {
+            // 닉네임 중복 체크 먼저 실행
+            const nickCheck = await db.ref('users').orderByChild('nickname').equalTo(nick).once('value');
+            if(nickCheck.exists()) return alert("이미 누군가 사용 중인 닉네임이야!");
 
-function renderStage() {
-    const stage = document.getElementById('playStage');
-    stage.innerHTML = '';
-    objects.forEach((obj, i) => {
-        const el = document.createElement('div');
-        el.className = "sprite text-6xl";
-        el.style.left = (320 + obj.x) + "px";
-        el.style.top = (180 - obj.y) + "px";
-        el.innerText = obj.emoji;
-        stage.appendChild(el);
-    });
-}
-
-// [핵심] 정지하면 시작 위치로 복구
-function runProject() {
-    // 실제로는 Blockly 코드가 실행되어야 함
-    objects[0].x += 50; 
-    renderStage();
-}
-
-function stopProject() {
-    // 딥카피를 이용해 초기 위치로 완벽하게 덮어쓰기
-    objects = JSON.parse(JSON.stringify(initialPos));
-    renderStage();
-}
-
-function handleLike() {
-    const newLikes = (currentProject.likes || 0) + 1;
-    db.ref('projects/' + currentProject.id + '/likes').set(newLikes);
-    document.getElementById('likeCount').innerText = newLikes;
-}
-
-function goToUserPage() {
-    alert(currentProject.authorName + "님의 마이페이지로 이동합니다! (여기에 해당 유저가 만든 작품 목록을 띄우면 됨)");
-}
-
-function openEditor(p = null) {
-    hideAll(); document.getElementById('editorScreen').classList.remove('hidden');
-    if(!workspace) workspace = Blockly.inject('blocklyDiv', { toolbox: document.getElementById('toolbox') });
-    if(p) {
-        document.getElementById('editTitle').value = p.name;
-        objects = p.objects;
+            // 회원가입 실행
+            const res = await auth.createUserWithEmailAndPassword(id + "@zizon.com", pw);
+            // 데이터베이스에 정보 저장
+            await db.ref('users/' + res.user.uid).set({
+                id: id,
+                nickname: nick
+            });
+            
+            // 요청하신 성공 메시지 추가!
+            alert("회원 가입 성공!"); 
+            location.reload();
+        } catch (err) {
+            alert("가입 실패: " + err.message);
+        }
     } else {
-        objects = [{ emoji: '🤖', x: -100, y: 0 }];
+        const id = document.getElementById('loginId').value.trim();
+        const pw = document.getElementById('loginPw').value.trim();
+        
+        if(!id || !pw) return alert("아이디와 비밀번호를 입력해줘!");
+
+        auth.signInWithEmailAndPassword(id + "@zizon.com", pw)
+            .catch(err => alert("아이디나 비밀번호가 틀렸어!"));
     }
 }
 
-function saveProject() {
-    const name = document.getElementById('editTitle').value;
-    db.ref('projects').push({
-        name, objects, authorId: currentUser.id, authorName: currentUser.nickname,
-        views: 0, likes: 0
-    });
-    showMain();
-}
+function handleLogout() { auth.signOut().then(() => location.reload()); }
 
-window.onload = showMain;
+// 로그인 상태 감지 및 UI 자동 전환
+auth.onAuthStateChanged(async user => {
+    if (user) {
+        const snap = await db.ref('users/' + user.uid).once('value');
+        const userData = snap.val();
+        if (userData) {
+            document.getElementById('authContainer').classList.add('hidden');
+            document.getElementById('topNav').classList.remove('hidden');
+            document.getElementById('mainContent').classList.remove('hidden');
+            document.getElementById('nickDisplay').innerText = userData.nickname;
+            
+            // 어쩌다코딩 운영자 태그 설정
+            if(userData.id === "somehowcoding" || userData.id === "어쩌다코딩") {
+                document.getElementById('adminTag').classList.remove('hidden');
+            }
+        }
+    }
+});
 </script>
 </body>
 </html>
